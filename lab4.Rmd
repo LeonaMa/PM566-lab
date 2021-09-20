@@ -1,6 +1,10 @@
 ---
 title: "lab4"
-output: html_document
+output:
+  html_document:
+    html_preview: false
+  github_document:
+    html_preview: false
 always_allow_html: true
 ---
 
