@@ -1,6 +1,6 @@
 ---
 title: "lab4"
-output: html_document
+output: github_document
 always_allow_html: true
 ---
 
@@ -141,6 +141,26 @@ leaflet(met_avg) %>%
   # And a pretty legend
   addLegend('bottomleft', pal=temp.pal, values=met_avg$rh,
           title='Temperature, C', opacity=1)
+```
+
+#Step8  Use a ggplot extension
+##Pick and extension (except cowplot) from here and make a plot of your choice using the met data (or met_avg)
+##Might want to try examples that come with the extension first (e.g. ggtech, gganimate, ggforce)
+
+
+```{r}
+# for reproducibility
+set.seed(123)
+library(ggstatsplot)
+
+# plot
+ggbetweenstats(
+  data = met_avg,
+  x = region,
+  y = wind.sp,
+  title = "relation between wind speed and regions"
+)
+
 ```
 
 
