@@ -1,0 +1,213 @@
+---
+title: "Lab 10"
+output:
+  github_document:
+    html_preview: false
+  html_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup-cons}
+# install.packages(c("RSQLite", "DBI"))
+
+library(RSQLite)
+library(DBI)
+
+# Initialize a temporary in memory database
+con <- dbConnect(SQLite(), ":memory:")
+
+# Download tables
+actor <- read.csv("https://raw.githubusercontent.com/ivanceras/sakila/master/csv-sakila-db/actor.csv")
+rental <- read.csv("https://raw.githubusercontent.com/ivanceras/sakila/master/csv-sakila-db/rental.csv")
+customer <- read.csv("https://raw.githubusercontent.com/ivanceras/sakila/master/csv-sakila-db/customer.csv")
+payment <- read.csv("https://raw.githubusercontent.com/ivanceras/sakila/master/csv-sakila-db/payment_p2007_01.csv")
+
+# Copy data.frames to database
+dbWriteTable(con, "actor", actor)
+dbWriteTable(con, "rental", rental)
+dbWriteTable(con, "customer", customer)
+dbWriteTable(con, "payment", payment)
+```
+
+Are the tables there?
+
+```{r}
+dbListTables(con)
+```
+
+```{sql, connection=con, output.var="x1"}
+PRAGMA table_info(actor)
+```
+
+```{r}
+x1
+```
+
+This equivalent to use `dbGetQuery`
+```{r}
+dbGetQuery(con, "PRAGMA table_info(actor)")
+```
+
+# Exercise 1
+
+AND using the LIMIT clause (`head()` in R) to just show the first 5
+```{r}
+dbGetQuery(con, "SELECT actor_id, first_name, last_name
+FROM actor /*you can add commit using 
+multiple lines*/
+ORDER by last_name, first_name
+LIMIT 5")
+```
+
+# Exercise 2
+```{r}
+dbGetQuery(con, "SELECT actor_id, first_name, last_name
+FROM actor 
+WHERE last_name IN ('WILLIAMS', 'DAVIS')")
+```
+
+# Exercise 3
+```{r}
+dbGetQuery(con, "PRAGMA table_info(rental)")
+```
+
+```{r}
+dbGetQuery(con," 
+SELECT DISTINCT customer_id 
+FROM rental
+WHERE date(rental_date) = '2005-07-05' LIMIT 5")
+```
+
+# Exercise 4
+
+## 4.1
+```{r}
+q <- dbSendQuery(con, "
+                 SELECT *
+                 FROM payment
+                 WHERE amount IN (1.99, 7.99, 9.99)")
+dbFetch(q, n = 10)
+dbFetch(q, n = 10)
+dbClearResult(q)
+```
+
+## 4.2
+```{r}
+dbGetQuery(con, "
+           SELECT *
+           FROM payment
+           WHERE amount >5 LIMIT 5")
+```
+
+Bonus: Count how may are
+
+```{r}
+dbGetQuery(con, "
+           SELECT COUNT(*)
+           FROM payment
+           WHERE amount >5")
+```
+
+Counting per `staff_id`
+```{r}
+
+```
+
+# Exercise 5
+```{r}
+dbGetQuery(con, "
+SELECT p.payment_id, p.amount
+FROM payment AS p
+  INNER JOIN customer AS c ON p.customer_id = c.customer_id
+WHERE c.last_name = 'DAVIS'")
+```
+
+# Exercise 6
+
+## 6.1
+
+```{r}
+dbGetQuery(con, "
+SELECT customer_id, COUNT(*) AS 'N Rentals'
+FROM rental GROUP BY customer_id
+LIMIT 5
+")
+```
+
+## 6.2
+
+```{r}
+dbGetQuery(con, "
+SELECT customer_id, COUNT(*) AS 'N Rentals'
+FROM rental GROUP BY customer_id
+/*
+This is equivalent to
+ORDER BY -`N Rentals` LIMIT 5
+*/
+ORDER BY `N Rentals` DESC LIMIT 5
+")
+```
+
+## 6.4
+
+```{r}
+dbGetQuery(con, "
+SELECT customer_id, COUNT(*) AS 'N Rentals'
+FROM rental GROUP BY customer_id
+HAVING `N Rentals` >= 40
+ORDER BY `N Rentals` 
+")
+```
+
+# Exercise 7
+
+```{r}
+dbGetQuery(con, "
+SELECT 
+  MAX(amount) AS `max`,
+  MIN(amount) AS `min`,
+  AVG(amount) AS `avg`,
+  SUM(amount) AS `sum`
+FROM payment")
+```
+
+
+## 7.1
+
+```{r}
+dbGetQuery(con, "
+SELECT 
+  customer_id,
+  MAX(amount) AS `max`,
+  MIN(amount) AS `min`,
+  AVG(amount) AS `avg`,
+  SUM(amount) AS `sum`
+FROM payment GROUP BY customer_id
+LIMIT 5")
+```
+
+## 7.2
+
+```{r}
+dbGetQuery(con, "
+SELECT 
+  customer_id,
+  COUNT(*) AS N,
+  MAX(amount) AS `max`,
+  MIN(amount) AS `min`,
+  AVG(amount) AS `avg`,
+  SUM(amount) AS `sum`
+FROM payment
+GROUP BY customer_id
+HAVING COUNT(*) > 5
+")
+```
+
+```{r cleaning}
+dbDisconnect(con)
+```
