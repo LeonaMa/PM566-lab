@@ -1,6 +1,8 @@
 Lab 11
 ================
 
+**See my lab output** [**here**](https://ghcdn.rawgit.org/LeonaMa/PM566-lab/main/lab11/README.html)
+
 ``` r
 library(dplyr)
 ```
